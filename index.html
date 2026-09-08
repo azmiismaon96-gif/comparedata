@@ -1,1 +1,652 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CompareData — We Find the Data You're Missing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FAF9F4;
+    --paper-dim:#F1EFE6;
+    --ink:#1C1E1A;
+    --ink-soft:#5C5E56;
+    --line:#D8D4C6;
+    --line-strong:#B9B4A2;
+    --teal:#1F5B57;
+    --teal-deep:#153F3C;
+    --match:#3E7A45;
+    --match-bg:#E8F0E3;
+    --mismatch:#AE6118;
+    --mismatch-bg:#F5EBDB;
+    --missing:#A23A30;
+    --missing-bg:#F5E4E0;
+    --radius:3px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:15px;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  a{color:inherit;}
+  .wrap{
+    max-width:1080px;
+    margin:0 auto;
+    padding:0 32px;
+  }
+  @media (max-width:640px){ .wrap{padding:0 20px;} }
 
+  /* ---------- header ---------- */
+  header{
+    border-bottom:1px solid var(--line);
+    position:sticky; top:0;
+    background:rgba(250,249,244,0.92);
+    backdrop-filter:blur(6px);
+    z-index:50;
+  }
+  .header-inner{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:20px 0;
+  }
+  .logo{
+    display:flex; align-items:baseline; gap:8px;
+    font-family:'Fraunces', serif;
+    font-size:20px;
+    font-weight:600;
+  }
+  .logo .dot{ color:var(--teal); }
+  nav{ display:flex; gap:28px; font-size:13px; }
+  nav a{
+    text-decoration:none;
+    color:var(--ink-soft);
+    border-bottom:1px solid transparent;
+    padding-bottom:2px;
+    transition:color .15s, border-color .15s;
+  }
+  nav a:hover{ color:var(--ink); border-color:var(--line-strong); }
+  @media (max-width:640px){ nav{ display:none; } }
+
+  /* ---------- hero ---------- */
+  .hero{
+    padding:88px 0 96px;
+  }
+  .hero-grid{
+    display:grid;
+    grid-template-columns:1.05fr 0.95fr;
+    gap:56px;
+    align-items:center;
+  }
+  @media (max-width:900px){ .hero-grid{ grid-template-columns:1fr; gap:48px; } }
+
+  .kicker{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin-bottom:18px;
+  }
+  .hero h1{
+    font-size:52px;
+    line-height:1.08;
+    color:var(--ink);
+  }
+  .hero h1 em{ font-style:italic; color:var(--teal-deep); }
+  @media (max-width:900px){ .hero h1{ font-size:38px; } }
+
+  .hero p.lead{
+    margin-top:22px;
+    max-width:46ch;
+    font-size:15px;
+    color:var(--ink-soft);
+  }
+  .hero-cta{
+    margin-top:32px;
+    display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+  }
+  .btn{
+    display:inline-block;
+    background:var(--teal-deep);
+    color:var(--paper);
+    text-decoration:none;
+    padding:13px 22px;
+    font-size:13.5px;
+    border-radius:var(--radius);
+    border:1px solid var(--teal-deep);
+    cursor:pointer;
+    font-family:'IBM Plex Mono', monospace;
+    transition:background .15s, transform .1s;
+  }
+  .btn:hover{ background:var(--teal); }
+  .btn:active{ transform:translateY(1px); }
+  .btn-ghost{
+    background:transparent;
+    color:var(--ink);
+    border:1px solid var(--line-strong);
+  }
+  .btn-ghost:hover{ background:var(--paper-dim); }
+  .price-note{ font-size:13px; color:var(--ink-soft); }
+  .price-note strong{ color:var(--ink); }
+
+  /* ---------- diff table visual ---------- */
+  .diff-card{
+    border:1px solid var(--line-strong);
+    background:#fff;
+    border-radius:6px;
+    overflow:hidden;
+    box-shadow:0 1px 0 var(--line);
+  }
+  .diff-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 14px;
+    background:var(--paper-dim);
+    border-bottom:1px solid var(--line);
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+  .diff-head .filename{ color:var(--ink); }
+  table.diff{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+  }
+  table.diff th{
+    text-align:left;
+    font-weight:500;
+    color:var(--ink-soft);
+    padding:8px 14px;
+    border-bottom:1px solid var(--line);
+    font-size:11.5px;
+  }
+  table.diff td{
+    padding:8px 14px;
+    border-bottom:1px solid var(--line);
+    white-space:nowrap;
+  }
+  table.diff tr:last-child td{ border-bottom:none; }
+  td.row-idx, th.row-idx{ color:var(--ink-soft); width:28px; }
+  .cell-match{ background:var(--match-bg); color:var(--match); }
+  .cell-mismatch{ background:var(--mismatch-bg); color:var(--mismatch); }
+  .cell-missing{ background:var(--missing-bg); color:var(--missing); font-style:italic; }
+  .diff-legend{
+    display:flex; gap:18px; flex-wrap:wrap;
+    padding:10px 14px;
+    border-top:1px solid var(--line);
+    font-size:11.5px;
+    color:var(--ink-soft);
+    background:var(--paper-dim);
+  }
+  .legend-item{ display:flex; align-items:center; gap:6px; }
+  .swatch{ width:9px; height:9px; border-radius:2px; display:inline-block; }
+
+  /* ---------- section shell ---------- */
+  section{ padding:72px 0; border-top:1px solid var(--line); }
+  .section-head{
+    display:flex; justify-content:space-between; align-items:flex-end;
+    gap:24px; margin-bottom:40px;
+    flex-wrap:wrap;
+  }
+  .section-head h2{ font-size:30px; }
+  .section-head p{ color:var(--ink-soft); font-size:13.5px; max-width:34ch; margin:0; }
+
+  /* ---------- service sheet ---------- */
+  .sheet{
+    border:1px solid var(--line-strong);
+    border-radius:6px;
+    overflow:hidden;
+    background:#fff;
+  }
+  .sheet-row{
+    display:grid;
+    grid-template-columns:44px 1fr 1.4fr;
+    border-bottom:1px solid var(--line);
+  }
+  .sheet-row:last-child{ border-bottom:none; }
+  .sheet-row.head{
+    background:var(--paper-dim);
+    color:var(--ink-soft);
+    font-size:11.5px;
+  }
+  .sheet-row > div{
+    padding:14px 16px;
+    border-right:1px solid var(--line);
+  }
+  .sheet-row > div:last-child{ border-right:none; }
+  .cell-ref{ color:var(--ink-soft); font-size:12.5px; }
+  .sheet-row.head .cell-ref{ display:flex; align-items:center; }
+  .service-name{ font-weight:500; color:var(--ink); }
+  .service-desc{ color:var(--ink-soft); font-size:13.5px; }
+  @media (max-width:640px){
+    .sheet-row{ grid-template-columns:32px 1fr; }
+    .sheet-row > div:nth-child(3){ grid-column:1 / -1; border-right:none; border-top:1px solid var(--line); }
+  }
+
+  /* ---------- workflow ---------- */
+  .flow{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:1px;
+    background:var(--line-strong);
+    border:1px solid var(--line-strong);
+    border-radius:6px;
+    overflow:hidden;
+  }
+  @media (max-width:760px){ .flow{ grid-template-columns:1fr; } }
+  .flow-step{
+    background:#fff;
+    padding:26px 20px;
+    position:relative;
+  }
+  .flow-step .ref{
+    font-size:12px; color:var(--teal);
+    margin-bottom:10px;
+  }
+  .flow-step h3{
+    font-size:17px;
+    margin-bottom:8px;
+  }
+  .flow-step p{
+    font-size:13px; color:var(--ink-soft); margin:0;
+  }
+  .flow-step:not(:last-child)::after{
+    content:"→";
+    position:absolute;
+    right:-14px; top:50%; transform:translateY(-50%);
+    color:var(--line-strong);
+    font-size:16px;
+    z-index:2;
+    background:var(--paper);
+    width:20px; text-align:center;
+  }
+  @media (max-width:760px){ .flow-step::after{ display:none; } }
+
+  /* ---------- pricing strip ---------- */
+  .pricing{
+    display:flex; align-items:center; justify-content:space-between;
+    border:1px solid var(--line-strong);
+    border-radius:6px;
+    padding:28px 32px;
+    background:linear-gradient(180deg,#fff, var(--paper-dim));
+    flex-wrap:wrap;
+    gap:20px;
+  }
+  .pricing .amount{
+    font-family:'Fraunces', serif;
+    font-size:40px;
+    color:var(--teal-deep);
+  }
+  .pricing .amount span{ font-size:16px; color:var(--ink-soft); font-family:'IBM Plex Mono', monospace; }
+  .pricing .desc{ max-width:38ch; font-size:13.5px; color:var(--ink-soft); }
+
+  /* ---------- form ---------- */
+  .form-card{
+    border:1px solid var(--line-strong);
+    border-radius:6px;
+    background:#fff;
+    overflow:hidden;
+  }
+  .form-card-head{
+    background:var(--paper-dim);
+    border-bottom:1px solid var(--line);
+    padding:14px 24px;
+    font-size:12px;
+    color:var(--ink-soft);
+    display:flex; justify-content:space-between;
+  }
+  form{ padding:28px 24px; display:grid; gap:18px; }
+  .field{ display:grid; gap:6px; }
+  .field label{
+    font-size:12px;
+    color:var(--ink-soft);
+    display:flex; justify-content:space-between;
+  }
+  .field label .ref{ color:var(--line-strong); }
+  .row-2{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  @media (max-width:640px){ .row-2{ grid-template-columns:1fr; } }
+  input[type=text], input[type=email], input[type=number], textarea, select{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:14px;
+    padding:10px 12px;
+    border:1px solid var(--line-strong);
+    border-radius:4px;
+    background:var(--paper);
+    color:var(--ink);
+    width:100%;
+  }
+  input:focus, textarea:focus, select:focus{
+    outline:2px solid var(--teal);
+    outline-offset:1px;
+    border-color:var(--teal);
+  }
+  textarea{ resize:vertical; min-height:88px; }
+  .file-drop{
+    border:1px dashed var(--line-strong);
+    border-radius:4px;
+    padding:20px;
+    text-align:center;
+    font-size:13px;
+    color:var(--ink-soft);
+    background:var(--paper-dim);
+    cursor:pointer;
+  }
+  .file-drop.has-file{ border-style:solid; color:var(--teal-deep); border-color:var(--teal); }
+  .form-actions{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-top:6px; flex-wrap:wrap; gap:14px;
+  }
+  .form-note{ font-size:12px; color:var(--ink-soft); }
+  .success-panel{
+    display:none;
+    padding:40px 24px;
+    text-align:center;
+  }
+  .success-panel.show{ display:block; }
+  .success-panel .mark{
+    font-size:28px; color:var(--match); font-family:'Fraunces', serif;
+    margin-bottom:10px;
+  }
+
+  /* ---------- footer ---------- */
+  footer{
+    border-top:1px solid var(--line);
+    padding:32px 0;
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:12.5px; color:var(--ink-soft);
+    flex-wrap:wrap; gap:12px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap header-inner">
+    <div class="logo">Compare<span class="dot">•</span>Data</div>
+    <nav>
+      <a href="#service">Service</a>
+      <a href="#workflow">Workflow</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#request">Request a Service</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero" style="border-top:none; padding-top:88px;">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="kicker">Manual data comparison &amp; research service</div>
+      <h1>We find the<br><em>data you're missing.</em></h1>
+      <p class="lead">Send us two lists, a spreadsheet and a website, or a set of records with gaps. We check every row by hand and hand back exactly what's missing, mismatched, or duplicated.</p>
+      <div class="hero-cta">
+        <a href="#request" class="btn">Request a Service</a>
+        <span class="price-note">Starting from <strong>$1</strong> per missing record</span>
+      </div>
+    </div>
+
+    <div class="diff-card">
+      <div class="diff-head">
+        <span>customer_list <span class="filename">vs</span> source_site.csv</span>
+        <span>row 1–5</span>
+      </div>
+      <table class="diff">
+        <thead>
+          <tr><th class="row-idx">#</th><th>Order ID</th><th>Email</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="row-idx">1</td><td>OD-3391</td><td class="cell-match">j.tan@mail.com</td><td class="cell-match">matched</td></tr>
+          <tr><td class="row-idx">2</td><td>OD-3392</td><td class="cell-mismatch">r.lim@gmial.com</td><td class="cell-mismatch">mismatch</td></tr>
+          <tr><td class="row-idx">3</td><td>OD-3393</td><td class="cell-missing">— not found —</td><td class="cell-missing">missing</td></tr>
+          <tr><td class="row-idx">4</td><td>OD-3394</td><td class="cell-match">a.wong@mail.com</td><td class="cell-match">matched</td></tr>
+          <tr><td class="row-idx">5</td><td>OD-3395</td><td class="cell-match">s.karim@mail.com</td><td class="cell-match">matched</td></tr>
+        </tbody>
+      </table>
+      <div class="diff-legend">
+        <span class="legend-item"><span class="swatch" style="background:var(--match)"></span>matched</span>
+        <span class="legend-item"><span class="swatch" style="background:var(--mismatch)"></span>mismatched</span>
+        <span class="legend-item"><span class="swatch" style="background:var(--missing)"></span>missing</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="service">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>What we compare</h2>
+      <p>Six ways we go through your records, row by row, until nothing's left unchecked.</p>
+    </div>
+    <div class="sheet">
+      <div class="sheet-row head">
+        <div class="cell-ref">#</div>
+        <div>Comparison type</div>
+        <div>What it catches</div>
+      </div>
+
+      <div class="sheet-row">
+        <div class="cell-ref">A1</div>
+        <div class="service-name">Excel vs Website</div>
+        <div class="service-desc">Your spreadsheet checked line by line against what's actually live on a website or portal.</div>
+      </div>
+      <div class="sheet-row">
+        <div class="cell-ref">A2</div>
+        <div class="service-name">Excel vs Excel</div>
+        <div class="service-desc">Two spreadsheets, side by side — every row matched up so nothing slips between versions.</div>
+      </div>
+      <div class="sheet-row">
+        <div class="cell-ref">A3</div>
+        <div class="service-name">Missing data</div>
+        <div class="service-desc">We find the records that should exist but don't show up anywhere in your file.</div>
+      </div>
+      <div class="sheet-row">
+        <div class="cell-ref">A4</div>
+        <div class="service-name">Duplicate data</div>
+        <div class="service-desc">Repeated entries flagged and listed, so you know exactly what to remove.</div>
+      </div>
+      <div class="sheet-row">
+        <div class="cell-ref">A5</div>
+        <div class="service-name">Mismatched information</div>
+        <div class="service-desc">Same record, different details — we point out exactly where the two sources disagree.</div>
+      </div>
+      <div class="sheet-row">
+        <div class="cell-ref">A6</div>
+        <div class="service-name">Manual data verification</div>
+        <div class="service-desc">A human checks each entry against the source instead of relying on an automated scan.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="workflow">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>How a request moves</h2>
+      <p>Four steps from the moment you submit to the moment you get your results.</p>
+    </div>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="ref">step 1</div>
+        <h3>Submit</h3>
+        <p>Fill in the request form and upload your file.</p>
+      </div>
+      <div class="flow-step">
+        <div class="ref">step 2</div>
+        <h3>Pay</h3>
+        <p>Confirm the record count and settle payment.</p>
+      </div>
+      <div class="flow-step">
+        <div class="ref">step 3</div>
+        <h3>We research</h3>
+        <p>Our team checks every record by hand against your source.</p>
+      </div>
+      <div class="flow-step">
+        <div class="ref">step 4</div>
+        <h3>Receive results</h3>
+        <p>Get back a marked-up file showing matched, missing, and mismatched rows.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="pricing">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Pricing</h2>
+      <p>Simple, per-record pricing — you only pay for what needed checking.</p>
+    </div>
+    <div class="pricing">
+      <div>
+        <div class="amount">$1 <span>per missing record found</span></div>
+      </div>
+      <div class="desc">Final quote depends on record count and how the comparison is done — tell us the details in the request form and we'll confirm before you pay.</div>
+    </div>
+  </div>
+</section>
+
+<section id="request">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Request a service</h2>
+      <p>Tell us what needs checking. We'll follow up with a quote before any work starts.</p>
+    </div>
+
+    <div class="form-card">
+      <div class="form-card-head">
+        <span>request_form.new</span>
+        <span id="form-status">unsaved</span>
+      </div>
+
+      <!-- Form submits to your email via FormSubmit — no backend needed.
+           To change the destination email later, edit the number below
+           (RECEIVING_EMAIL) at the top of the <script> block. -->
+      <form id="requestForm" method="POST" action="https://formsubmit.co/azmiismaon96@gmail.com" enctype="multipart/form-data">
+        <div class="row-2">
+          <div class="field">
+            <label>Name <span class="ref">A1</span></label>
+            <input type="text" id="name" name="name" required placeholder="Your full name">
+          </div>
+          <div class="field">
+            <label>Email <span class="ref">A2</span></label>
+            <input type="email" id="email" name="email" required placeholder="you@email.com">
+          </div>
+        </div>
+
+        <div class="field">
+          <label>What data needs to be found <span class="ref">A3</span></label>
+          <textarea id="dataNeeded" name="data_needed" required placeholder="Describe the data you need us to find, compare, or verify"></textarea>
+        </div>
+
+        <div class="row-2">
+          <div class="field">
+            <label>Website / source <span class="ref">A4</span></label>
+            <input type="text" id="source" name="source" placeholder="https:// or source name">
+          </div>
+          <div class="field">
+            <label>Number of records <span class="ref">A5</span></label>
+            <input type="number" id="recordCount" name="record_count" min="1" placeholder="e.g. 250">
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Upload Excel / CSV <span class="ref">A6</span></label>
+          <div class="file-drop" id="fileDrop">Click to choose a file — .xlsx or .csv</div>
+          <input type="file" id="fileInput" name="attachment" accept=".xlsx,.xls,.csv" style="display:none;">
+        </div>
+
+        <div class="field">
+          <label>Special instructions <span class="ref">A7</span></label>
+          <textarea id="instructions" name="instructions" placeholder="Anything else we should know before we start"></textarea>
+        </div>
+
+        <!-- FormSubmit settings -->
+        <input type="hidden" name="_subject" value="New CompareData request">
+        <input type="hidden" name="_template" value="table">
+        <input type="hidden" name="_captcha" value="false">
+        <input type="hidden" name="_next" id="nextField" value="">
+        <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off">
+
+        <div class="form-actions">
+          <span class="form-note" id="formNote">We'll reply with a quote before any charge is made.</span>
+          <button type="submit" class="btn" id="submitBtn">Submit request</button>
+        </div>
+      </form>
+
+      <div class="success-panel" id="successPanel">
+        <div class="mark">✓ submitted</div>
+        <p style="color:var(--ink-soft); font-size:13.5px;">Thanks — your request has been sent. We'll email a quote shortly.</p>
+        <p style="margin-top:18px;"><button class="btn btn-ghost" id="resetForm" type="button">Submit another request</button></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap" style="display:flex; justify-content:space-between; width:100%; flex-wrap:wrap; gap:12px;">
+    <span>CompareData — manual data comparison &amp; research</span>
+    <span>hello@comparedata.example</span>
+  </div>
+</footer>
+
+<script>
+  const fileDrop = document.getElementById('fileDrop');
+  const fileInput = document.getElementById('fileInput');
+  fileDrop.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => {
+    if(fileInput.files.length){
+      fileDrop.textContent = fileInput.files[0].name;
+      fileDrop.classList.add('has-file');
+    }
+  });
+
+  const form = document.getElementById('requestForm');
+  const successPanel = document.getElementById('successPanel');
+  const formStatus = document.getElementById('form-status');
+  const submitBtn = document.getElementById('submitBtn');
+  const nextField = document.getElementById('nextField');
+
+  // After FormSubmit sends the email, it redirects the browser back here
+  // with ?sent=1 so we can show the success panel — this also makes file
+  // attachments work reliably (unlike the earlier AJAX version).
+  const baseUrl = window.location.origin + window.location.pathname;
+  nextField.value = baseUrl + '?sent=1#request';
+
+  if (new URLSearchParams(window.location.search).get('sent') === '1') {
+    form.style.display = 'none';
+    successPanel.classList.add('show');
+    formStatus.textContent = 'submitted';
+    // clean the URL so refreshing doesn't re-show the success panel
+    history.replaceState(null, '', baseUrl + '#request');
+  }
+
+  form.addEventListener('input', () => { formStatus.textContent = 'editing'; });
+
+  form.addEventListener('submit', () => {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Sending…';
+    formStatus.textContent = 'sending';
+    // form now submits normally to FormSubmit — no preventDefault here
+  });
+
+  document.getElementById('resetForm').addEventListener('click', () => {
+    form.reset();
+    fileDrop.textContent = 'Click to choose a file — .xlsx or .csv';
+    fileDrop.classList.remove('has-file');
+    successPanel.classList.remove('show');
+    form.style.display = 'grid';
+    formStatus.textContent = 'unsaved';
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Submit request';
+  });
+</script>
+
+</body>
+</html>
